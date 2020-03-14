@@ -1,12 +1,10 @@
 import time, datetime
-import os, sys
+import os
 import spotipy
 import webbrowser
 import spotipy.util as util
-import json
-import json.decoder as JSONDecodeError
 import random
-
+from subprocess import call
 
 
 
@@ -14,7 +12,7 @@ class Spotify:
 
     def __init__(self):
         self.username = input("Enter username > ")
-        self.userScope = 'user-library-read'
+        self.userScope = 'user-library-read user-read-private'
         self.spotipyObject = self.createSpotipyObject()
         self.userData = self.getUserData()
 
@@ -33,24 +31,35 @@ class Spotify:
     def getUserData(self):
         return self.spotipyObject.current_user()
 
+    def getSubscriptionType(self):
+        return self.userData['product']
 
     def playRandomSong(self):
-        webbrowser.open(self.pickRandomSong())
+        if (self.getSubscriptionType() == "premium"):
+            self.spotipyObject.start_playback(uris=[self.pickRandomSong()])
+        else:
+            webbrowser.open(self.pickRandomSong())
         # time.sleep(30)
-        # self.playRandomSong()  continue until user stops program, or max recursion reached, currently disabled
+        # self.playRandomSong()  continue until user stops program, or max recursion reached -- currently disabled
 
     def createSongList(self):
         tracks = self.spotipyObject.current_user_saved_tracks(limit=50)
         songList = []
-        for track in tracks['items']:
-            songList.append(track["track"]["preview_url"])
+        if (self.getSubscriptionType() == "premium"):
+            for track in tracks['items']:
+                songList.append(track["track"]["uri"])
+        else:
+            for track in tracks['items']:
+                songList.append(track["track"]["preview_url"])
         return songList
 
     def pickRandomSong(self):
         songs = self.filterSongList(self.createSongList())
         picked_song = random.choice(songs)
         return picked_song
+
     
+
     @staticmethod
     def filterSongList(songs):
         ret = []
@@ -59,13 +68,6 @@ class Spotify:
                 ret.append(song)
         return ret
     
-    
-
-    
-
-        
-
-
 
 class Clock:
 
@@ -82,12 +84,33 @@ class Clock:
 
 
 
+
+class AudioController: # works on linux 
+
+    def __init__(self):
+        self.currentVolume = 45
+    
+    def incrementAudioLevel(self):
+        call(["amixer", "-D", "pulse", "sset", "Master", f"{self.currentVolume}%"])
+        self.currentVolume += 5
+    
+
 def main():
     spotify = Spotify()
     clock = Clock(Clock.getTimeForWakingUp())
+    audio = AudioController()
+    audio.incrementAudioLevel() # set audio to 45% -- only linux
+    
     while not clock.checkHour(): 
         time.sleep(60)  # wait for one minute before checking again, in order to reduce resource usage
-    spotify.playRandomSong() 
+    
+    spotify.playRandomSong()
+
+    while audio.currentVolume < 100:
+        time.sleep(1)
+        # audio.incrementAudioLevel() -- only linux
+
+
 
 
 
