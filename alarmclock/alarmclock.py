@@ -21,7 +21,7 @@ class Spotify:
 
     def getUserToken(self):
         try:
-            token = util.prompt_for_user_token(self.username, scope=self.userScope, client_id='041eb8754fb14e76970bd74d88537edf', client_secret='6465e55750664185a0ba6fdecb8147b7', redirect_uri='https://google.com/')
+            token = util.prompt_for_user_token(self.username, scope=self.userScope, client_id='041eb8754fb14e76970bd74d88537edf', client_secret='x', redirect_uri='https://google.com/')
         except Exception as e:
             os.remove(f".cache-{self.username}")
             self.getUserToken()
